@@ -1,0 +1,96 @@
+{
+  "$comment": [
+    "§4.1c mutation coverage. Each entry is a CONCRETE PATCH: a file, a find",
+    "string that must occur exactly once, and its replacement, plus the rendered",
+    "verdict/measurement marker it kills, the test that kills it, and the shared",
+    "helper that test must run. A kill counts only when the unmutated baseline",
+    "passed in the same run, the patch changed the file, the run served the",
+    "MUTATED bundle (its hash moved), and the failure is the owning test's own.",
+    "mutations/run.mjs enforces all four; e2e/global-teardown.ts additionally",
+    "fails the run if a recorded kill's (test, marker) assertion never executed,",
+    "judged at RUNTIME from e2e/observations.ts, not from spec source."
+  ],
+  "port": 4350,
+  "mutations": [
+    {
+      "id": "mitm-no-delta",
+      "file": "src/lpn/bench.ts",
+      "find": "(a) => xor(a, delta)",
+      "replace": "(a) => (xor(a, delta), a)",
+      "marker": "mitm-x-recovered",
+      "test": "mitm recovers x exactly at the published size",
+      "helper": "expectVerdict",
+      "why": "Removes the ⊕ δ tamper. With no perturbation every session behaves honestly, every bit reads 0, and the recovered x no longer matches the real key."
+    },
+    {
+      "id": "reader-strict-threshold",
+      "file": "src/lpn/hb.ts",
+      "find": "accepted: failures <= t",
+      "replace": "accepted: failures < t",
+      "marker": "auth-verdict",
+      "test": "a noiseless session at t = 0 is ACCEPTED",
+      "helper": "expectVerdict",
+      "why": "Changes the reader's accept rule from ≤ t to < t. A noiseless honest session at t = 0 has zero failures: ≤ accepts, < rejects."
+    },
+    {
+      "id": "tag-noise-zero",
+      "file": "src/lpn/hb.ts",
+      "find": "const nu = this.noise.bit();",
+      "replace": "const nu = (this.noise.bit() & 0) as Bit;",
+      "marker": "pfr-observed",
+      "test": "the observed false-reject frequency is substantial at the published threshold",
+      "helper": "readClaim",
+      "why": "Forces the tag's noise bit to 0. Honest sessions then never fail a check, so the observed false-reject frequency collapses from ~0.44 to 0."
+    },
+    {
+      "id": "falsetag-noisy-reply",
+      "file": "src/attack/false-tag.ts",
+      "find": "return (a: BitVec) => dot(a, x);",
+      "replace": "return (a: BitVec) => ((dot(a, x) ^ 1) as Bit);",
+      "marker": "falsetag-y",
+      "test": "the false tag recovers y exactly once x is known",
+      "helper": "expectVerdict",
+      "why": "Adds noise to the false tag's reply (flips it). The reader's failures no longer track b·y, so the recovered y is wrong."
+    },
+    {
+      "id": "mitm-majority-vote",
+      "file": "src/attack/mitm.ts",
+      "find": "  let sessions = 0;\n  for (let attempt = 0; attempt < m; attempt++) {\n    sessions++;\n    if (oracle.runTamperedSession(delta)) {\n      return { index, delta, sessions, accepted: true, bit: 0 };\n    }\n  }\n  return { index, delta, sessions, accepted: false, bit: 1 };",
+      "replace": "  let sessions = 0;\n  let accepts = 0;\n  for (let attempt = 0; attempt < m; attempt++) {\n    sessions++;\n    if (oracle.runTamperedSession(delta)) accepts++;\n  }\n  const decided: Bit = 2 * accepts > m ? 0 : 1;\n  return { index, delta, sessions, accepted: accepts > 0, bit: decided };",
+      "marker": "mitm-x-recovered",
+      "test": "mitm recovers x exactly at the published size",
+      "helper": "expectVerdict",
+      "why": "Replaces 'any acceptance means the bit is 0' with a majority vote over m sessions. A zero bit accepts only ~56% of the time, so a majority of m misreads it ~28% of the time and the recovered x is wrong."
+    },
+    {
+      "id": "pfr-off-by-one",
+      "file": "src/lpn/rates.ts",
+      "find": "binomialRange(r, eta, t + 1, r)",
+      "replace": "binomialRange(r, eta, t, r)",
+      "marker": "pfr-exact",
+      "test": "the exact false-reject rate is 0.4403 at r = 80, t = 20",
+      "helper": "readClaim",
+      "why": "Starts the false-reject sum at i = t instead of t + 1, adding the i = t term. P_FR is no longer 0.4403."
+    },
+    {
+      "id": "gf2-skip-row-swap",
+      "file": "src/lpn/gf2.ts",
+      "find": "[rows[rank], rows[pivot]] = [rows[pivot], rows[rank]];",
+      "replace": "void [rows[rank], rows[pivot]];",
+      "marker": "hb-recovery",
+      "test": "the chosen-challenge attack recovers and verifies x",
+      "helper": "expectVerdict",
+      "why": "Skips the pivot row swap in Gaussian elimination. The default random challenge set needs several swaps, so the elimination produces a wrong x and the verification run rejects it."
+    },
+    {
+      "id": "hbplus-drop-by",
+      "file": "src/lpn/hbplus.ts",
+      "find": "const expected = (dot(a, this.x) ^ dot(b, this.y)) as Bit;",
+      "replace": "const expected = (dot(a, this.x) ^ (dot(b, this.y) & 0)) as Bit;",
+      "marker": "round-hbp-check",
+      "test": "exhibit 1 Row 3 renders an HB+ check that passes",
+      "helper": "expectVerdict",
+      "why": "Drops the b·y term from the HB+ reader's check. On Row 3 (b·y = 1, ν = 0) the correct check passes but the mutated check fails."
+    }
+  ]
+}

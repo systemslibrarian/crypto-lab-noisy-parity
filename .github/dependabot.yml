@@ -1,0 +1,34 @@
+# Grouped so an ecosystem's routine bumps arrive as ONE pull request instead of
+# one per dependency. Ungrouped, this fleet opened 1,461 PRs across 176 repos.
+#
+# Majors are deliberately left OUT of the npm group: a breaking major (TypeScript
+# 7, vitest 4, a @noble subpath drop) inside a grouped PR makes the whole thing
+# unmergeable, which is the hand-unpicking this exists to prevent. Majors come
+# individually and a human decides.
+#
+# The minor/patch group and the actions group auto-merge once this lab's own gate
+# passes on the PR — see the dependabot-auto-merge job in deploy.yml.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-and-patch:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"

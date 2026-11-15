@@ -1,0 +1,15 @@
+node_modules
+dist
+.DS_Store
+*.local
+playwright-report
+test-results
+coverage
+tsconfig.tsbuildinfo
+chat.md
+# A committed copy of the fleet template ages silently into a second, wrong standard.
+# The binding copy lives in the catalog repo at audits/_MASTER-TEMPLATE.md.
+_MASTER-TEMPLATE.md
+CRYPTO-LAB-TEMPLATE*.md
+# The user asked that the brief not travel in the repo.
+brief.md
