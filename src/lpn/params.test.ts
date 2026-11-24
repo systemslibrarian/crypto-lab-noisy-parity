@@ -84,6 +84,14 @@ describe('acceptance G: fail-closed parameter validation', () => {
     expect(validateExhaustiveK(16).ok).toBe(true);
   });
 
+  it('requires an explicit threshold and accepts a typed zero', () => {
+    const base = { k: 8, r: 10, eta: '0.25' };
+    for (const t of ['', '   ']) {
+      expect(validateParams({ ...base, t })).toMatchObject({ ok: false, refusal: { code: REFUSAL.T_OUT_OF_RANGE } });
+    }
+    expect(validateParams({ ...base, t: '0' })).toMatchObject({ ok: true, value: { t: 0 } });
+  });
+
   it('the default threshold is ⌈r·η⌉ = 20 at r=80, η=1/4', () => {
     expect(defaultThreshold(80, rational(1n, 4n))).toBe(20);
     expect(defaultThreshold(60, rational(1n, 4n))).toBe(15);

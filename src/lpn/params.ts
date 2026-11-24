@@ -90,7 +90,7 @@ export function validateParams(input: {
       'η must satisfy 0 ≤ η < 1/2. At η = 1/2 the reply z = a·x ⊕ ν is a fair coin whatever x is, so it carries no information about the key and no reader could ever tell a tag from a guesser.'
     );
   }
-  const t = typeof input.t === 'string' ? Number(input.t.trim()) : input.t;
+  const t = typeof input.t === 'string' && input.t.trim() !== '' ? Number(input.t) : input.t;
   if (typeof t !== 'number' || !Number.isInteger(t) || t < 0 || t > r) {
     return refuse(REFUSAL.T_OUT_OF_RANGE, `t must be an integer between 0 and r = ${r}; got ${String(input.t)}.`);
   }
